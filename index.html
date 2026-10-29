@@ -101,12 +101,38 @@
     );
     color: var(--ink);
     font-family: var(--mono);
-    overflow: hidden;
+    overflow-x: hidden;
   }
+  /* Layout: one grid, three arrangements.
+     Desktop / tablet-landscape: left column (title, card, controls) + map on the right.
+     Phone portrait (and narrow / tablet portrait): stacked — title+year, map, legend, card, controls.
+     Phone landscape (short screens): map left, title/card/controls right. */
   .stage {
     position: relative;
     width: 100%;
-    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: clamp(300px, 30vw, 400px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "title map"
+      ".     map"
+      "panel map"
+      "ctrl  map";
+    column-gap: clamp(16px, 2.5vw, 40px);
+    row-gap: 16px;
+    padding: max(20px, env(safe-area-inset-top, 0px))
+      max(20px, env(safe-area-inset-right, 0px))
+      max(18px, env(safe-area-inset-bottom, 0px))
+      max(20px, env(safe-area-inset-left, 0px));
+  }
+  .mapbox {
+    grid-area: map;
+    position: relative;
+    min-height: 0;
+    min-width: 0;
+    z-index: 1;
   }
   .flies {
     position: absolute;
@@ -315,12 +341,9 @@
   }
 
   .title {
-    position: absolute;
-    left: max(20px, env(safe-area-inset-left, 0px));
-    top: env(safe-area-inset-top, 0px);
-    right: max(20px, env(safe-area-inset-right, 0px));
-    padding-top: 20px;
-    max-width: 28ch;
+    grid-area: title;
+    position: relative;
+    min-width: 0;
     z-index: 4;
     pointer-events: none;
   }
@@ -426,16 +449,12 @@
     color: var(--accent);
     margin-top: 6px;
   }
-  @media (max-height: 540px) {
-    .sign {
-      display: none;
-    }
-  }
 
   .hud {
-    position: absolute;
-    right: max(18px, env(safe-area-inset-right, 0px));
-    top: max(16px, env(safe-area-inset-top, 0px));
+    grid-area: map;
+    align-self: start;
+    justify-self: end;
+    position: relative;
     z-index: 4;
     text-align: right;
     pointer-events: none;
@@ -467,11 +486,11 @@
     color: var(--maroon);
   }
   .legend {
-    position: absolute;
-    right: max(18px, env(safe-area-inset-right, 0px));
-    top: calc(
-      max(16px, env(safe-area-inset-top, 0px)) + clamp(58px, 10vw, 96px)
-    );
+    grid-area: map;
+    align-self: start;
+    justify-self: end;
+    margin-top: clamp(66px, 8vw, 100px);
+    position: relative;
     z-index: 4;
     display: flex;
     flex-direction: column;
@@ -507,11 +526,14 @@
   }
 
   .panel {
-    position: fixed;
+    grid-area: panel;
+    position: relative;
     z-index: 3;
-    left: max(16px, env(safe-area-inset-left, 0px));
-    bottom: max(70px, calc(env(safe-area-inset-bottom, 0px) + 62px));
-    width: min(360px, calc(100vw - 32px));
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
   }
   .card {
     position: relative;
@@ -649,30 +671,15 @@
     color: var(--muted);
     margin-top: 5px;
   }
-  @media (max-width: 620px) {
-    .panel {
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(360px, 92vw);
-    }
-    .legend {
-      display: none;
-    }
-    svg.map {
-      top: -5%;
-      bottom: 15%;
-    } /* lift the map so the SE outbreak sites clear the bottom card */
-  }
-
   .controls {
-    position: absolute;
+    grid-area: ctrl;
+    position: relative;
     z-index: 6;
-    right: max(16px, env(safe-area-inset-right, 0px));
-    bottom: max(16px, env(safe-area-inset-bottom, 0px));
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    gap: 6px;
+    justify-content: flex-start;
   }
   .btn {
     font-family: var(--mono);
@@ -683,11 +690,176 @@
     background: var(--btn-bg);
     border: 1px solid var(--card-line);
     border-radius: 999px;
-    padding: 9px 14px;
+    padding: 9px 12px;
     cursor: pointer;
+  }
+  .vol {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding-top: 0;
+    padding-bottom: 0;
+    cursor: default;
+    touch-action: none;
+  }
+  .vol .vic {
+    font-size: 13px;
+    line-height: 1;
+    width: 16px;
+    text-align: center;
+  }
+  .vol input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 68px;
+    height: 30px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .vol input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(
+      90deg,
+      var(--accent) 0 var(--v, 70%),
+      var(--card-line) var(--v, 70%) 100%
+    );
+  }
+  .vol input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--card-line);
+  }
+  .vol input[type="range"]::-moz-range-progress {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--accent);
+  }
+  .vol input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg0);
+  }
+  .vol input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg0);
   }
   .btn:hover {
     border-color: var(--accent);
+  }
+
+  /* ---------- Phone / tablet portrait, and any narrow window ---------- */
+  @media (orientation: portrait) and (max-width: 900px), (max-width: 620px) and (min-height: 501px) {
+    .stage {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(min(66vw, 520px), 1fr) auto auto auto;
+      grid-template-areas:
+        "title  hud"
+        "map    map"
+        "legend legend"
+        "panel  panel"
+        "ctrl   ctrl";
+      column-gap: 12px;
+      row-gap: 10px;
+      padding: max(14px, env(safe-area-inset-top, 0px))
+        max(16px, env(safe-area-inset-right, 0px))
+        max(14px, env(safe-area-inset-bottom, 0px))
+        max(16px, env(safe-area-inset-left, 0px));
+    }
+    .title .ey { font-size: 9.5px; letter-spacing: 0.14em; margin-bottom: 6px; }
+    .title h1 { font-size: clamp(22px, 6.4vw, 34px); }
+    .sign { margin-top: 10px; width: auto; max-width: none; gap: 10px; }
+    .sign img { width: 54px; border-radius: 10px; }
+    .sign .nm { font-size: 13px; }
+    .sign .nm span { display: inline; font-size: 11px; }
+    .sign .role { margin-top: 2px; }
+    .sign .qt { font-size: 11.5px; margin-top: 3px; }
+    .hud { grid-area: hud; }
+    .hud .yr { font-size: clamp(30px, 9vw, 48px); }
+    .hud .pl { font-size: 10.5px; letter-spacing: 0.1em; }
+    .legend {
+      grid-area: legend;
+      justify-self: center;
+      margin-top: 0;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px 16px;
+    }
+    .panel { justify-self: center; max-width: 560px; }
+    .controls { justify-content: center; gap: 6px; }
+    .btn { padding: 8px 11px; font-size: 10.5px; letter-spacing: 0.06em; }
+    .vol { padding-top: 0; padding-bottom: 0; gap: 5px; }
+    .vol input[type="range"] { width: 62px; }
+  }
+
+  /* ---------- Phone landscape (short screens) ---------- */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .stage {
+      grid-template-columns: minmax(0, 1fr) clamp(260px, 42vw, 400px);
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-areas:
+        "ey     sign"
+        "h1     sign"
+        "map    panel"
+        "legend ctrl";
+      column-gap: 16px;
+      row-gap: 6px;
+      height: 100vh;
+      height: 100dvh;
+      min-height: 300px;
+      padding: max(10px, env(safe-area-inset-top, 0px))
+        max(14px, env(safe-area-inset-right, 0px))
+        max(8px, env(safe-area-inset-bottom, 0px))
+        max(14px, env(safe-area-inset-left, 0px));
+    }
+    .title { display: contents; }
+    .title .ey { grid-area: ey; align-self: end; font-size: 9px; letter-spacing: 0.12em; margin: 0; }
+    .title h1 { grid-area: h1; font-size: clamp(18px, 3.2vw, 26px); white-space: nowrap; position: relative; z-index: 4; }
+    .sign { grid-area: sign; align-self: center; margin: 0; width: auto; max-width: none; gap: 9px; position: relative; z-index: 4; }
+    .sign img { width: 42px; border-radius: 9px; }
+    .sign .nm { font-size: 12.5px; }
+    .sign .nm span { display: inline; font-size: 10.5px; }
+    .sign .role { font-size: 8px; margin-top: 2px; }
+    .sign .qt { font-size: 10.5px; margin-top: 2px; line-height: 1.2; }
+    .hud .yr { font-size: clamp(24px, 4.2vw, 36px); }
+    .hud .pl { font-size: 10px; }
+    .legend {
+      grid-area: legend;
+      justify-self: start;
+      align-self: center;
+      margin-top: 0;
+      flex-direction: row;
+      gap: 4px 14px;
+      font-size: 9px;
+    }
+    .panel {
+      justify-content: flex-start;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      border-radius: 15px;
+      min-height: 0;
+    }
+    .card { padding: 11px 13px; }
+    .yr2 { font-size: 17px; }
+    .vn { margin-bottom: 6px; }
+    .ln { font-size: 13.5px; margin-bottom: 5px; }
+    .dt { font-size: 10.5px; line-height: 1.45; }
+    .qrwrap, .qrwrap img { width: 58px; }
+    .qrwrap img { height: 58px; }
+    .controls { justify-content: flex-end; align-self: center; gap: 6px; }
+    .btn { padding: 6px 9px; font-size: 10px; letter-spacing: 0.05em; }
+    .vol { padding-top: 0; padding-bottom: 0; gap: 4px; }
+    .vol input[type="range"] { width: 54px; height: 26px; }
+    .controls { flex-wrap: nowrap; }
   }
 </style>
 
@@ -695,9 +867,10 @@
   <div class="flies" id="flies"></div>
   <div class="progress" id="progress"></div>
 
+  <div class="mapbox">
   <svg
     class="map"
-    viewBox="0 0 1000 680"
+    viewBox="60 30 860 670"
     preserveAspectRatio="xMidYMid meet"
     id="svg"
   >
@@ -795,6 +968,7 @@
       outside historical focus
     </text>
   </svg>
+  </div>
 
   <div class="title" id="title">
     <p class="ey">
@@ -837,6 +1011,10 @@
     <button class="btn" id="musicToggle" aria-pressed="false">
       &#9834; Music
     </button>
+    <label class="btn vol" title="Volume">
+      <span class="vic" id="volIcon" aria-hidden="true">&#128265;</span>
+      <input type="range" id="volume" min="0" max="100" step="1" value="70" aria-label="Music volume" />
+    </label>
     <button class="btn" id="pauseToggle" aria-pressed="false">
       &#10074;&#10074; Pause
     </button>
@@ -1055,23 +1233,78 @@
     }
   });
 
+  var VB = svg.viewBox.baseVal,
+    U = 1;
+  // Keep labels and markers legible on screen whatever the map's rendered size
+  // (small phone map → larger SVG units; big desktop map → original sizes).
   function setLabelSizes() {
     var r = svg.getBoundingClientRect();
-    var scale = Math.min(r.width / 1000, r.height / 680) || 1;
-    var fs = Math.max(11, Math.min(16, 13 / scale));
-    for (var key in labels)
+    var scale = Math.min(r.width / VB.width, r.height / VB.height) || 1;
+    var fs = Math.max(11, Math.min(40, 12.5 / scale));
+    U = Math.max(1, Math.min(2.4, 0.8 / scale));
+    for (var key in labels) {
+      var s = SITES[key];
       labels[key].setAttribute("font-size", fs.toFixed(1));
+      labels[key].setAttribute("y", (s.y + 13 * U + fs * 0.95).toFixed(1));
+    }
+    ["kolda", "kedougou", "tamba"].forEach(function (key) {
+      markers[key].ring.setAttribute("r", (13 * U).toFixed(1));
+      markers[key].ring.style.strokeWidth = (3 * U).toFixed(2);
+      markers[key].dot.setAttribute("r", (5 * U).toFixed(1));
+    });
+    var d = SITES.dakar,
+      h = 7 * U;
+    dakarPin.setAttribute("x", d.x - h);
+    dakarPin.setAttribute("y", d.y - h);
+    dakarPin.setAttribute("width", 2 * h);
+    dakarPin.setAttribute("height", 2 * h);
+    dakarPin.style.strokeWidth = (2.4 * U).toFixed(2);
+    ARCS.forEach(function (a) {
+      a.el.style.strokeWidth = (3.4 * U).toFixed(2);
+    });
     note.setAttribute("font-size", (fs * 0.92).toFixed(1));
+    note.setAttribute("y", (SITES.tamba.y - 13 * U - fs * 0.7).toFixed(1));
   }
-  setLabelSizes();
-  window.addEventListener("resize", setLabelSizes);
+
+  // Phone portrait: reserve the height of the tallest card so the map doesn't
+  // jump in size as the story moves from one card to the next.
+  var panel = document.querySelector(".panel");
+  var stackedMQ = window.matchMedia(
+    "(orientation: portrait) and (max-width: 900px), (max-width: 620px) and (min-height: 501px)",
+  );
+  function lockPanel() {
+    panel.style.minHeight = "";
+    if (!stackedMQ.matches) return;
+    var probe = document.createElement("div");
+    probe.className = "card on";
+    probe.style.cssText =
+      "position:absolute;visibility:hidden;left:0;right:0;top:0;pointer-events:none";
+    panel.appendChild(probe);
+    var mx = 0;
+    for (var i = 0; i < DATA.length; i++) {
+      probe.innerHTML = cardHTML(i);
+      mx = Math.max(mx, probe.offsetHeight);
+    }
+    panel.removeChild(probe);
+    panel.style.minHeight = mx + "px";
+  }
+  var rzT = null;
+  function onResize() {
+    clearTimeout(rzT);
+    rzT = setTimeout(function () {
+      lockPanel();
+      setLabelSizes();
+    }, 60);
+  }
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", onResize);
 
   function ripple(key, spread) {
     var s = SITES[key];
     var rp = document.createElementNS(NS, "circle");
     rp.setAttribute("cx", s.x);
     rp.setAttribute("cy", s.y);
-    rp.setAttribute("r", 13);
+    rp.setAttribute("r", 13 * U);
     rp.setAttribute("class", "ripple");
     rp.setAttribute("stroke", spread ? "#c45151" : "#3fae8e");
     markG.appendChild(rp);
@@ -1080,12 +1313,9 @@
     }, 1600);
   }
 
-  function fillCard(i) {
-    var d = DATA[i],
-      spread = d.site === "tamba";
-    card.href = d.url;
-    card.className = "card" + (spread ? " spread" : "");
-    card.innerHTML =
+  function cardHTML(i) {
+    var d = DATA[i];
+    return (
       '<div class="rev top"><span class="idx">0' +
       (i + 1) +
       ' / 05</span><span class="yr2">' +
@@ -1109,7 +1339,15 @@
       '" alt="QR to ' +
       d.venue +
       '"></div></div>' +
-      '<span class="rev scan">scan or tap to open ↗</span>';
+      '<span class="rev scan">scan or tap to open ↗</span>'
+    );
+  }
+  function fillCard(i) {
+    var d = DATA[i],
+      spread = d.site === "tamba";
+    card.href = d.url;
+    card.className = "card" + (spread ? " spread" : "");
+    card.innerHTML = cardHTML(i);
     var revs = card.querySelectorAll(".rev");
     for (var r = 0; r < revs.length; r++)
       revs[r].style.transitionDelay = 110 + r * 90 + "ms";
@@ -1254,42 +1492,103 @@
       paused ? resumeAnim() : pauseAnim();
     });
   document.getElementById("replay").addEventListener("click", run);
+  lockPanel();
   run();
+  if (document.fonts && document.fonts.ready)
+    document.fonts.ready.then(function () {
+      lockPanel();
+      setLabelSizes();
+    });
 
   (function () {
+    // Music: the fade and the volume go through a Web Audio gain node, because
+    // phones (iOS) ignore audio.volume — that is why "stop" never worked there.
     var mbtn = document.getElementById("musicToggle"),
-      audio = document.getElementById("bgMusic");
-    audio.volume = 0;
+      audio = document.getElementById("bgMusic"),
+      slider = document.getElementById("volume"),
+      volIcon = document.getElementById("volIcon");
+    var level = 0.7;
+    try {
+      var saved = localStorage.getItem("dengueMapVol");
+      if (saved !== null && !isNaN(+saved)) level = Math.min(1, Math.max(0, +saved));
+    } catch (e) {}
+    slider.value = Math.round(level * 100);
     var playing = false,
-      fade = null;
-    function fadeTo(target, done) {
-      if (fade) clearInterval(fade);
-      fade = setInterval(function () {
-        var v = audio.volume,
-          step = 0.06;
-        if (Math.abs(v - target) <= step) {
-          audio.volume = target;
-          clearInterval(fade);
-          fade = null;
-          if (done) done();
-        } else audio.volume = v + (target > v ? step : -step);
-      }, 60);
+      ctx = null,
+      gain = null,
+      stopT = null,
+      fadeT = null,
+      resumeOnShow = false;
+
+    function ensureGraph() {
+      if (ctx) return;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      try {
+        ctx = new AC();
+        var src = ctx.createMediaElementSource(audio);
+        gain = ctx.createGain();
+        gain.gain.value = 0;
+        src.connect(gain);
+        gain.connect(ctx.destination);
+        audio.volume = 1;
+      } catch (e) {
+        ctx = null;
+        gain = null;
+      }
+    }
+    // Ramp the output level to v (0..1) over sec seconds.
+    function rampTo(v, sec) {
+      if (gain) {
+        var t = ctx.currentTime;
+        gain.gain.cancelScheduledValues(t);
+        gain.gain.setValueAtTime(gain.gain.value, t);
+        gain.gain.linearRampToValueAtTime(v, t + Math.max(0.02, sec));
+        return;
+      }
+      // Fallback (desktop browsers without Web Audio): step audio.volume.
+      if (fadeT) clearInterval(fadeT);
+      var steps = Math.max(1, Math.round((sec * 1000) / 40)),
+        from = audio.volume,
+        n = 0;
+      fadeT = setInterval(function () {
+        n++;
+        try {
+          audio.volume = from + (v - from) * Math.min(1, n / steps);
+        } catch (e) {}
+        if (n >= steps) {
+          clearInterval(fadeT);
+          fadeT = null;
+        }
+      }, 40);
+    }
+    function paintSlider() {
+      var p = Math.round(level * 100);
+      slider.style.setProperty("--v", p + "%");
+      volIcon.innerHTML = p === 0 ? "&#128263;" : p < 50 ? "&#128265;" : "&#128266;";
     }
     function setUI(on) {
       mbtn.setAttribute("aria-pressed", on ? "true" : "false");
-      mbtn.innerHTML = on ? "&#9835; Playing" : "&#9834; Music";
+      mbtn.innerHTML = on ? "&#9724; Stop" : "&#9834; Music";
       mbtn.style.borderColor = on ? "var(--accent)" : "";
     }
     function play() {
       if (playing) return;
+      ensureGraph();
+      if (ctx && ctx.state !== "running") {
+        try { ctx.resume(); } catch (e) {}
+      }
+      if (stopT) { clearTimeout(stopT); stopT = null; }
+      if (!gain) { try { audio.volume = 0; } catch (e) {} }
+      playing = true;
+      setUI(true);
       var p = audio.play();
       var ok = function () {
-        playing = true;
-        setUI(true);
-        fadeTo(0.85);
+        if (playing) rampTo(level, 0.9);
       };
       if (p && p.then)
         p.then(ok).catch(function () {
+          playing = false;
           setUI(false);
         });
       else ok();
@@ -1298,33 +1597,68 @@
       if (!playing) return;
       playing = false;
       setUI(false);
-      fadeTo(0, function () {
-        audio.pause();
-      });
+      rampTo(0, 0.35);
+      if (stopT) clearTimeout(stopT);
+      // Always really pause — never depend on the fade finishing.
+      stopT = setTimeout(function () {
+        stopT = null;
+        if (!playing) audio.pause();
+      }, 380);
     }
+
     mbtn.addEventListener("click", function (e) {
       e.stopPropagation();
       playing ? halt() : play();
     });
+
+    slider.addEventListener("input", function () {
+      level = slider.value / 100;
+      paintSlider();
+      if (playing) rampTo(level, 0.05);
+      try { localStorage.setItem("dengueMapVol", String(level)); } catch (e) {}
+    });
+    // Touching the slider must not count as the "first tap" that starts music.
+    ["pointerdown", "touchstart", "click"].forEach(function (ev) {
+      slider.parentNode.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+    });
+    paintSlider();
+
+    // Phones keep playing in the background after you leave the page — stop it,
+    // and pick up again when the page is visible.
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        resumeOnShow = playing;
+        if (playing) {
+          playing = false;
+          setUI(false);
+          rampTo(0, 0.05);
+          audio.pause();
+        }
+      } else if (resumeOnShow) {
+        resumeOnShow = false;
+        play();
+      }
+    });
+    window.addEventListener("pagehide", function () {
+      audio.pause();
+    });
+
     function kickoff(e) {
-      if (e && mbtn.contains(e.target)) {
+      if (e && e.target && e.target.closest && e.target.closest(".vol, #musicToggle")) {
         removeKick();
         return;
       }
       if (!playing) play();
       removeKick();
     }
+    var KICK = ["click", "touchend", "keydown"];
     function removeKick() {
-      ["pointerdown", "touchstart", "keydown", "wheel", "scroll"].forEach(
-        function (ev) {
-          window.removeEventListener(ev, kickoff, true);
-        },
-      );
+      KICK.forEach(function (ev) {
+        window.removeEventListener(ev, kickoff, true);
+      });
     }
-    ["pointerdown", "touchstart", "keydown", "wheel", "scroll"].forEach(
-      function (ev) {
-        window.addEventListener(ev, kickoff, { capture: true, passive: true });
-      },
-    );
+    KICK.forEach(function (ev) {
+      window.addEventListener(ev, kickoff, { capture: true, passive: true });
+    });
   })();
 </script>
